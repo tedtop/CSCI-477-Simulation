@@ -1,0 +1,23 @@
+<mujoco model="pendulum">
+  <option timestep="0.01" gravity="0 0 -9.81"/>
+  
+  <worldbody>
+    <!-- Fixed point for pendulum -->
+    <body name="origin" pos="0 0 0">
+      <geom name="origin_geom" type="sphere" size="0.05" rgba="0.8 0.2 0.2 1"/>
+      <!-- Joint connecting to pendulum -->
+      <joint name="pin" type="hinge" axis="0 1 0" pos="0 0 0"/>
+      
+      <!-- Pendulum rod and bob -->
+      <body name="pendulum" pos="0 0 -0.5">
+        <geom name="rod" type="capsule" fromto="0 0 0 0 0 -0.5" size="0.02" rgba="0.2 0.2 0.8 1"/>
+        <geom name="bob" type="sphere" pos="0 0 -0.5" size="0.1" rgba="0.2 0.8 0.2 1"/>
+      </body>
+    </body>
+  </worldbody>
+  
+  <!-- Initial configuration -->
+  <keyframe>
+    <key name="init" qpos="1.57" />  <!-- Start at 90 degrees -->
+  </keyframe>
+</mujoco>

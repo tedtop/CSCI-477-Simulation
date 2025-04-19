@@ -1,0 +1,26 @@
+Project Grading Rubric
+
+Organization
+Notebook must be broken into the following clear sections: Introduction, Methods, Analysis, and Interpretation. Material found in each segment is as it explained below.
+/ 5 pts
+Methods
+Numerical methods, algorithms, and program overview provided in the form of concise summaries of the program, rather than simply listing source code.
+
+Numerical methods are described in sufficient detail to allow a reader to know where to look for more information. You are free to take information from the notebooks I provide. Some means of determining if the output is correct is developed. Is there sufficient detail to make the experiments conducted reproducable?
+/ 10 pts
+Analysis
+Relationships between variables are investigated, sensitivity of output to input investigated, generalization of solution is considered. Sources of uncertainty related to analysis are considered, as is the suitability of the numerical approach. Most importantly; all prompts provided in the questions/project statement are addressed in detail and the results can be demonstrated to be correct.
+/ 40 pts
+Interpretation
+Summary of results, insights into the system, conclusions from the analysis, and avenues for future exploration. This might also be considered a conclusion and can include some reflection on the complete assignment as opposed to the clear response to individual prompts detailed in the analysis.
+/ 15 pts
+Data Presentation
+Graphics are thoughtfully and carefully prepared; free of unnecessary clutter, well annotated, and easily interpreted.
+/ 15 pts
+Mechanics
+The document is well written and formatted. Appropriate use of markdown to communicate findings. Generally free of typographic, grammatical, and spelling errors.
+/ 10 pts
+Introduction
+Summary of the theory (equations) being used and the problem being solved.
+/ 5 pts
+Total Points: 0

@@ -1,0 +1,126 @@
+<mujoco model="rods_falling">
+    <option timestep="0.002" iterations="20" solver="Newton">
+        <flag warmstart="enable" energy="enable" contact="enable" />
+    </option>
+
+    <asset>
+        <material name="floor" rgba="0.9 0.9 0.9 1" reflectance="0.2" />
+        <material name="box" rgba="0.7 0.5 0.3 1" />
+        <material name="rod" rgba="0.9 0.9 0.7 1" />
+    </asset>
+
+    <default>
+        <geom friction="1.0 0.005 0.0001" condim="6" />
+        <joint damping="0.05" />
+    </default>
+
+    <worldbody>
+        <!-- Floor -->
+        <geom name="floor" type="plane" size="3 3 0.1" pos="0 0 0" material="floor" />
+        
+        <!-- Fixed light sources -->
+        <light pos="0 0 3" dir="0 0 -1" diffuse="0.7 0.7 0.7" specular="0.3 0.3 0.3" />
+        <light pos="3 3 3" dir="-1 -1 -1" diffuse="0.3 0.3 0.3" specular="0.1 0.1 0.1" />
+
+        <!-- Box - created with 5 sides (no top) -->
+        <body name="box" pos="0 0 1.5">
+            <!-- Box base -->
+            <geom name="box_base" type="box" size="0.4 0.2 0.02" pos="0 0 0" material="box" />
+            <!-- Box sides -->
+            <geom name="box_side1" type="box" size="0.4 0.02 0.3" pos="0 0.18 0.3" material="box" />
+            <geom name="box_side2" type="box" size="0.4 0.02 0.3" pos="0 -0.18 0.3" material="box" />
+            <geom name="box_side3" type="box" size="0.02 0.2 0.3" pos="0.38 0 0.3" material="box" />
+            <geom name="box_side4" type="box" size="0.02 0.2 0.3" pos="-0.38 0 0.3" material="box" />
+            
+            <!-- Joint to tilt the box -->
+            <joint name="box_hinge" type="hinge" axis="1 0 0" limited="true" range="-1.57 0" />
+        </body>
+        
+        <!-- Rods (20 thin cylinders) -->
+        <body name="rod1" pos="-0.32 0.15 1.6">
+            <freejoint/>
+            <geom name="rod1_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod2" pos="-0.32 0.1 1.6">
+            <freejoint/>
+            <geom name="rod2_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod3" pos="-0.32 0.05 1.6">
+            <freejoint/>
+            <geom name="rod3_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod4" pos="-0.32 0 1.6">
+            <freejoint/>
+            <geom name="rod4_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod5" pos="-0.32 -0.05 1.6">
+            <freejoint/>
+            <geom name="rod5_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod6" pos="-0.32 -0.1 1.6">
+            <freejoint/>
+            <geom name="rod6_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod7" pos="-0.32 -0.15 1.6">
+            <freejoint/>
+            <geom name="rod7_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod8" pos="-0.24 0.15 1.6">
+            <freejoint/>
+            <geom name="rod8_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod9" pos="-0.24 0.1 1.6">
+            <freejoint/>
+            <geom name="rod9_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod10" pos="-0.24 0.05 1.6">
+            <freejoint/>
+            <geom name="rod10_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod11" pos="-0.24 0 1.6">
+            <freejoint/>
+            <geom name="rod11_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod12" pos="-0.24 -0.05 1.6">
+            <freejoint/>
+            <geom name="rod12_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod13" pos="-0.24 -0.1 1.6">
+            <freejoint/>
+            <geom name="rod13_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod14" pos="-0.24 -0.15 1.6">
+            <freejoint/>
+            <geom name="rod14_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod15" pos="-0.16 0.15 1.6">
+            <freejoint/>
+            <geom name="rod15_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod16" pos="-0.16 0.1 1.6">
+            <freejoint/>
+            <geom name="rod16_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod17" pos="-0.16 0.05 1.6">
+            <freejoint/>
+            <geom name="rod17_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod18" pos="-0.16 0 1.6">
+            <freejoint/>
+            <geom name="rod18_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod19" pos="-0.16 -0.05 1.6">
+            <freejoint/>
+            <geom name="rod19_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+        <body name="rod20" pos="-0.16 -0.1 1.6">
+            <freejoint/>
+            <geom name="rod20_geom" type="capsule" size="0.004 0.04" material="rod" />
+        </body>
+    </worldbody>
+
+    <actuator>
+        <!-- Manual slider control for box tilt -->
+        <position name="box_tilt" joint="box_hinge" kp="10" ctrllimited="true" ctrlrange="-1.57 0" />
+    </actuator>
+</mujoco>
