@@ -88,6 +88,97 @@ class HourglassSimulator:
         self.vx = np.zeros(self.N)
         self.vy = np.zeros(self.N)
 
+    def initialize_particles_randomly(self):
+        """Initialize particles with better spacing to reduce overlap"""
+        # Set proper radii
+        self.r = np.ones(self.N) * self.particle_radius
+
+        # Create a more spaced out grid of particles
+        particles_per_row = int(np.sqrt(self.N))
+        rows = (self.N + particles_per_row - 1) // particles_per_row
+
+        # Calculate spacing based on radius to minimize overlap
+        x_spacing = self.Lx / (particles_per_row + 1)
+        y_spacing = 2.5 * self.r[0]  # Extra vertical spacing to prevent immediate overlap
+
+        count = 0
+        for i in range(rows):
+            for j in range(particles_per_row):
+                if count < self.N:
+                    self.x[count] = (j + 1) * x_spacing
+                    self.y[count] = self.Ly - (i + 1) * y_spacing
+
+                    # Add small random offsets to avoid perfect alignment and make it look more natural
+                    self.x[count] += np.random.uniform(-0.1, 0.1) * self.r[0]
+
+                    count += 1
+
+        # Zero initial velocities - let gravity do the work
+        self.vx = np.zeros(self.N)
+        self.vy = np.zeros(self.N)
+
+    def initialize_random_falling_particles(self):
+        """Initialize particles randomly at the top of the hourglass, taking wall thickness into account."""
+        # Set proper radii
+        self.r = np.ones(self.N) * self.particle_radius
+
+        # Get wall parameters to avoid placing particles inside walls
+        wall_width = 0.5  # Default wall width if not defined
+        left_top_x = 0.0
+        right_top_x = self.Lx
+
+        # If we have wall segments defined, get the wall width and positions
+        if hasattr(self, 'left_wall_segments') and self.left_wall_segments:
+            top_segment = self.left_wall_segments[0]  # Get top segment
+            wall_width = top_segment['width']
+            left_top_x = top_segment['top_x'] + wall_width  # Add width to get inner edge
+
+        if hasattr(self, 'right_wall_segments') and self.right_wall_segments:
+            top_segment = self.right_wall_segments[0]  # Get top segment
+            right_top_x = top_segment['top_x'] - top_segment['width']  # Subtract width to get inner edge
+
+        # Area where particles can be placed
+        valid_width = right_top_x - left_top_x
+
+        # Define the top area height (25% of total height)
+        top_area_height = self.Ly * 0.25
+        bottom_y = self.Ly - top_area_height
+
+        # Calculate minimum distance between particles to avoid excessive overlap
+        min_distance = 2.2 * self.particle_radius
+
+        # Initialize all particles
+        for i in range(self.N):
+            position_valid = False
+            attempt = 0
+            max_attempts = 100  # Maximum attempts to place a particle
+
+            while not position_valid and attempt < max_attempts:
+                # Random position within valid area
+                x = left_top_x + np.random.random() * valid_width
+                y = bottom_y + np.random.random() * top_area_height
+
+                # Check distance from previously placed particles
+                position_valid = True
+                for j in range(i):
+                    dx = x - self.x[j]
+                    dy = y - self.y[j]
+                    distance = np.sqrt(dx**2 + dy**2)
+
+                    if distance < min_distance:
+                        position_valid = False
+                        break
+
+                attempt += 1
+
+            # If we couldn't find a valid position after max attempts, use the last one anyway
+            self.x[i] = x
+            self.y[i] = y
+
+        # Apply small random velocities to help break symmetry
+        self.vx = np.random.uniform(-0.01, 0.01, self.N)
+        self.vy = np.zeros(self.N)  # Start with zero vertical velocity
+
     #############################
     ##### Simulator Control #####
     #############################

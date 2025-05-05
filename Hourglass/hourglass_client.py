@@ -31,8 +31,8 @@ print(f"Using timestep dt={simulator.dt}, running {steps_per_frame} simulation s
 # Create an hourglass shape with a narrow neck in the middle
 simulator.draw_hourglass(neck_width=3.0, wall_width=0.5)
 
-# Initialize particles to flow in from the top
-simulator.initialize_particles()
+# Initialize particles to randomly fall in from the top
+simulator.initialize_random_falling_particles()
 
 # Debug information
 print(f"Number of particles: {simulator.N}")
