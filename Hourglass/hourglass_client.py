@@ -9,11 +9,11 @@ from HourglassSimulator import HourglassSimulator
 
 # Create simulation with parameters optimized for visible falling
 simulator = HourglassSimulator(
-    N=64,                   # Number of particles
+    N=100,                  # Number of particles
     Lx=20.0,                # Box width
     Ly=20.0,                # Box height
     temperature=0.0,        # No initial random motion
-    dt=0.01,               # Time step
+    dt=0.01,                # Time step
     gravity=5.0,            # Strong gravity to overcome particle interactions
     particle_radius=0.5,    # Smaller radius to reduce overlapping
     k=0.1,                  # Weaker spring constant
@@ -28,11 +28,8 @@ steps_per_frame = max(1, int(round(time_per_frame / simulator.dt)))  # Adjusted 
 
 print(f"Using timestep dt={simulator.dt}, running {steps_per_frame} simulation steps per animation frame")
 
-# Add a diagonal sloped left wall to create an hourglass shape
-simulator.add_left_wall(top_x=1.0, bottom_x=6.0, wall_width=0.5)
-
-# Add a diagonal sloped right wall to complete the hourglass shape
-simulator.add_right_wall(top_x=19.0, bottom_x=14.0, wall_width=0.5)
+# Create an hourglass shape with a narrow neck in the middle
+simulator.draw_hourglass(neck_width=3.0, wall_width=0.5)
 
 # Initialize particles to flow in from the top
 simulator.initialize_particles()
@@ -45,9 +42,9 @@ print(f"Particle positions:")
 print(f"  x range: {np.min(simulator.x):.2f} to {np.max(simulator.x):.2f}")
 print(f"  y range: {np.min(simulator.y):.2f} to {np.max(simulator.y):.2f}")
 
-# Create visualization with side-by-side plots
-fig = plt.figure(figsize=(15, 8))
-gs = fig.add_gridspec(2, 3)
+# Change the figure layout and add a new plot for particle flow
+fig = plt.figure(figsize=(16, 10))
+gs = fig.add_gridspec(3, 3)
 
 # Main simulation display
 ax_sim = fig.add_subplot(gs[:, 0:2])
@@ -68,9 +65,31 @@ ax_energy.grid(True)
 
 # Velocity plot
 ax_velocity = fig.add_subplot(gs[1, 2])
-ax_velocity.set_title("Velocity vs Time")
+ax_velocity.set_title("Kinetic Temperature vs Time")
 ax_velocity.set_xlabel("Time")
-ax_velocity.set_ylabel("Average Velocity")
+ax_velocity.set_ylabel("Mean Kinetic Energy")
+ax_velocity.grid(True)
+
+# New plot for particle flow
+ax_flow = fig.add_subplot(gs[2, 2])
+ax_flow.set_title("Particles Through Neck vs Time")
+ax_flow.set_xlabel("Time")
+ax_flow.set_ylabel("Particle Count")
+ax_flow.grid(True)
+
+# Fix axes with appropriate static limits based on actual data
+ax_energy.set_xlim(0, 15)        # Fixed time range: 0-15 seconds
+ax_energy.set_ylim(0, 3500)      # Energy range: 0-3500 units (based on max ~3140)
+ax_velocity.set_xlim(0, 15)      # Same time range for both plots
+ax_velocity.set_ylim(0, 35)      # Temperature range: 0-35 units (based on max ~31.39)
+ax_flow.set_xlim(0, 15)          # Same time range
+ax_flow.set_ylim(0, simulator.N) # Max possible number of particles
+
+# Turn off debug printing now that we have the proper scales
+DEBUG_ENERGY_RANGES = False
+
+# Regular grid lines
+ax_energy.grid(True)
 ax_velocity.grid(True)
 
 # When creating circles
@@ -101,7 +120,7 @@ if hasattr(simulator, 'left_wall_top_x') and hasattr(simulator, 'left_wall_botto
         [simulator.left_wall_bottom_x, 0],
         [simulator.left_wall_bottom_x + simulator.left_wall_width, 0],
         [simulator.left_wall_top_x + simulator.left_wall_width, simulator.Ly]
-    ], closed=True, fill=True, color='gray', alpha=0.5, edgecolor='black', linewidth=1.5)
+    ], closed=True, fill=True, facecolor='gray', alpha=0.5, edgecolor='black', linewidth=1.5)
 
     ax_sim.add_patch(wall_polygon)
 
@@ -113,79 +132,136 @@ if hasattr(simulator, 'right_wall_top_x') and hasattr(simulator, 'right_wall_bot
     wall_polygon = Polygon([
         [simulator.right_wall_top_x, simulator.Ly],
         [simulator.right_wall_bottom_x, 0],
-        [simulator.right_wall_bottom_x + simulator.right_wall_width, 0],
-        [simulator.right_wall_top_x + simulator.right_wall_width, simulator.Ly]
-    ], closed=True, fill=True, color='gray', alpha=0.5, edgecolor='black', linewidth=1.5)
+        [simulator.right_wall_bottom_x - simulator.right_wall_width, 0],
+        [simulator.right_wall_top_x - simulator.right_wall_width, simulator.Ly]
+    ], closed=True, fill=True, facecolor='gray', alpha=0.5, edgecolor='black', linewidth=1.5)
 
     ax_sim.add_patch(wall_polygon)
 
+# Add the wall visualizations
+if hasattr(simulator, 'left_wall_segments') and simulator.left_wall_segments:
+    from matplotlib.patches import Polygon
+
+    # Draw each left wall segment
+    for segment in simulator.left_wall_segments:
+        # Create a polygon for the wall segment
+        wall_polygon = Polygon([
+            [segment['top_x'], segment['top_y']],
+            [segment['bottom_x'], segment['bottom_y']],
+            [segment['bottom_x'] + segment['width'], segment['bottom_y']],
+            [segment['top_x'] + segment['width'], segment['top_y']]
+        ], closed=True, fill=True, facecolor='gray', alpha=0.5, edgecolor='black', linewidth=1.5)
+
+        ax_sim.add_patch(wall_polygon)
+
+if hasattr(simulator, 'right_wall_segments') and simulator.right_wall_segments:
+    from matplotlib.patches import Polygon
+
+    # Draw each right wall segment
+    for segment in simulator.right_wall_segments:
+        # Create a polygon for the wall segment
+        wall_polygon = Polygon([
+            [segment['top_x'], segment['top_y']],
+            [segment['bottom_x'], segment['bottom_y']],
+            [segment['bottom_x'] - segment['width'], segment['bottom_y']],
+            [segment['top_x'] - segment['width'], segment['top_y']]
+        ], closed=True, fill=True, facecolor='gray', alpha=0.5, edgecolor='black', linewidth=1.5)
+
+        ax_sim.add_patch(wall_polygon)
+
 # Add text for time and debug info
-time_text = ax_sim.text(0.02, 0.98, '', transform=ax_sim.transAxes, fontsize=10)
-debug_text = ax_sim.text(0.02, 0.94, '', transform=ax_sim.transAxes, fontsize=10)
+time_text = ax_sim.text(0.02, 0.96, '', transform=ax_sim.transAxes, fontsize=10)
+debug_text = ax_sim.text(0.02, 0.93, '', transform=ax_sim.transAxes, fontsize=10)
 
 # Initialize data arrays for plots
 time_data = []
 energy_data = []
 kinetic_data = []
 potential_data = []
-velocity_data = []
+kinetic_temp_data = []
+particles_through_neck_data = []  # Track particles that have crossed the midpoint
 
-# Create plot lines
+# Initialize a set to track which particles have passed through the neck
+particles_passed_through = set()
+
+# Create plot lines with empty initial data
 energy_line, = ax_energy.plot([], [], 'k-', label='Total')
 kinetic_line, = ax_energy.plot([], [], 'r-', label='Kinetic')
 potential_line, = ax_energy.plot([], [], 'b-', label='Potential')
 ax_energy.legend(loc='upper right')
 
-velocity_line, = ax_velocity.plot([], [], 'g-')
+kinetic_temp_line, = ax_velocity.plot([], [], 'g-')
 
-# Animation update function
+# Add plot line for particle flow
+flow_line, = ax_flow.plot([], [], 'm-', linewidth=2)
+
+# Add a horizontal line at the hourglass neck position to visualize the counting boundary
+neck_y = simulator.Ly / 2  # The neck is at the middle height
+
+# Add text display for particles passed count
+flow_text = ax_sim.text(0.02, 0.90, '', transform=ax_sim.transAxes, fontsize=10)
+
+# Simple animation update function with no dynamic scaling
 def update(frame):
-    global time_data, energy_data, kinetic_data, potential_data, velocity_data
+    global time_data, energy_data, kinetic_data, potential_data, kinetic_temp_data, particles_through_neck_data, particles_passed_through
 
-    # Run multiple steps per frame to speed up animation
-    for _ in range(steps_per_frame):  # Adjusted simulation steps per frame
+    # Run simulation steps
+    for _ in range(steps_per_frame):
         simulator.step()
 
-    # Collect data for plots
-    time_data.append(simulator.time)
+    # Collect data
+    current_time = simulator.time
+    time_data.append(current_time)
     energy_data.append(simulator.total_energy)
     kinetic_data.append(simulator.kinetic_energy)
     potential_data.append(simulator.potential_energy)
+    kinetic_temp_data.append(simulator.kinetic_energy / simulator.N)
 
-    # Calculate average particle velocity
-    avg_velocity = np.sqrt(np.mean(simulator.vx**2 + simulator.vy**2))
-    velocity_data.append(avg_velocity)
+    # Track particles passing through the hourglass neck (middle height)
+    neck_y = simulator.Ly / 2
+    neck_width = 3.0  # This should match the neck_width in draw_hourglass
+    neck_x_min = (simulator.Lx - neck_width) / 2
+    neck_x_max = neck_x_min + neck_width
 
+    # Check each particle
+    for i in range(simulator.N):
+        # If particle has crossed the neck line from above to below and is within the neck width
+        if (simulator.y[i] < neck_y and
+            i not in particles_passed_through and
+            neck_x_min < simulator.x[i] < neck_x_max):
+            particles_passed_through.add(i)
+
+    # Store the count of particles that have passed through
+    particles_through_neck_data.append(len(particles_passed_through))
+
+    # Update the flow text
+    flow_text.set_text(f'Particles passed: {len(particles_passed_through)}')
+
+    # Print max energy values every 20 frames to help determine appropriate scale ranges
+    if DEBUG_ENERGY_RANGES and frame > 0 and frame % 20 == 0:
+        print(f"Time: {current_time:.2f}")
+        print(f"Max Total Energy: {max(energy_data):.2f}")
+        print(f"Max Kinetic Energy: {max(kinetic_data):.2f}")
+        print(f"Max Potential Energy: {max(potential_data):.2f}")
+        print(f"Max Kinetic Temperature: {max(kinetic_temp_data):.2f}")
+        print("-" * 30)
 
     # Update particle positions
     for i, circle in enumerate(circles):
         circle.center = (simulator.x[i], simulator.y[i])
 
     # Update info text
-    time_text.set_text(f'Time: {simulator.time:.2f}')
+    time_text.set_text(f'Time: {current_time:.2f}')
 
-    # Display debugging info
-    max_ay = np.max(np.abs(simulator.ay))
-    avg_vy = np.mean(np.abs(simulator.vy))
-    debug_text.set_text(f'Max Accel: {max_ay:.2f}, Avg |Vy|: {avg_vy:.2f}')
-
-    # Update plot data
+    # Update the plot lines with new data
     energy_line.set_data(time_data, energy_data)
     kinetic_line.set_data(time_data, kinetic_data)
     potential_line.set_data(time_data, potential_data)
-    velocity_line.set_data(time_data, velocity_data)
-
-    # Adjust plot ranges
-    if len(time_data) > 1:
-        for ax in [ax_energy, ax_velocity]:
-            ax.set_xlim(time_data[0], time_data[-1])
-            ax.relim()
-            ax.autoscale_view(scaley=True)
+    kinetic_temp_line.set_data(time_data, kinetic_temp_data)
+    flow_line.set_data(time_data, particles_through_neck_data)
 
     # Return all artists that were updated
-    return circles + [time_text, debug_text,
-                     energy_line, kinetic_line, potential_line,
-                     velocity_line]
+    return circles + [time_text, flow_text, energy_line, kinetic_line, potential_line, kinetic_temp_line, flow_line]
 
 # Create animation
 ani = FuncAnimation(fig, update, frames=500, interval=20, blit=True)

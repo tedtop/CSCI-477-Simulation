@@ -242,7 +242,73 @@ class HourglassSimulator:
         # print(f"Gravity force: {self.gravity}")
         # print(f"Max particle force: {np.max(np.abs(self.ay - self.gravity))}")
 
+    ############################
     ##### Wall Constraints #####
+    ############################
+    def draw_hourglass(self, neck_width=3.0, wall_width=0.5):
+        """
+        Creates an hourglass shape by placing left and right walls that meet at the middle.
+
+        Parameters:
+        -----------
+        neck_width : float
+            Width of the narrow middle part of the hourglass
+        wall_width : float
+            Thickness of the walls
+        """
+        # Calculate wall positions to create an hourglass shape
+        left_wall_top_x = 0.0       # Left edge at top
+        left_wall_middle_x = (self.Lx - neck_width) / 2  # Position at the neck (middle height)
+        left_wall_bottom_x = 0.0    # Left edge at bottom
+
+        right_wall_top_x = self.Lx   # Right edge at top
+        right_wall_middle_x = self.Lx - left_wall_middle_x  # Position at the neck (middle height)
+        right_wall_bottom_x = self.Lx  # Right edge at bottom
+
+        # Add top half of the hourglass (walls converging to the middle)
+        if not hasattr(self, 'left_wall_segments'):
+            self.left_wall_segments = []
+        if not hasattr(self, 'right_wall_segments'):
+            self.right_wall_segments = []
+
+        # Clear any existing wall segments
+        self.left_wall_segments = []
+        self.right_wall_segments = []
+
+        # Add top half of hourglass (top to middle)
+        self.left_wall_segments.append({
+            'top_x': left_wall_top_x,
+            'bottom_x': left_wall_middle_x,
+            'top_y': self.Ly,
+            'bottom_y': self.Ly / 2,  # Middle height
+            'width': wall_width
+        })
+
+        self.right_wall_segments.append({
+            'top_x': right_wall_top_x,
+            'bottom_x': right_wall_middle_x,
+            'top_y': self.Ly,
+            'bottom_y': self.Ly / 2,  # Middle height
+            'width': wall_width
+        })
+
+        # Add bottom half of hourglass (middle to bottom)
+        self.left_wall_segments.append({
+            'top_x': left_wall_middle_x,
+            'bottom_x': left_wall_bottom_x,
+            'top_y': self.Ly / 2,  # Middle height
+            'bottom_y': 0,
+            'width': wall_width
+        })
+
+        self.right_wall_segments.append({
+            'top_x': right_wall_middle_x,
+            'bottom_x': right_wall_bottom_x,
+            'top_y': self.Ly / 2,  # Middle height
+            'bottom_y': 0,
+            'width': wall_width
+        })
+
     def add_left_wall(self, top_x, bottom_x, wall_width):
         """
         Add a diagonal left wall to the hourglass simulation.
@@ -283,77 +349,136 @@ class HourglassSimulator:
         # Calculate slope of the wall (m in y = mx + b)
         self.right_wall_slope = self.Ly / (top_x - bottom_x) if top_x != bottom_x else float('inf')
 
+    def add_left_wall_segment(self, top_x, bottom_x, top_y, bottom_y, wall_width):
+        """
+        Add a segment of the left wall of the hourglass.
+
+        Parameters:
+        -----------
+        top_x : float
+            X-coordinate of the top of the wall segment
+        bottom_x : float
+            X-coordinate of the bottom of the wall segment
+        top_y : float
+            Y-coordinate of the top of the wall segment
+        bottom_y : float
+            Y-coordinate of the bottom of the wall segment
+        wall_width : float
+            Width/thickness of the wall
+        """
+        # Store the segment parameters in a list if it doesn't exist yet
+        if not hasattr(self, 'left_wall_segments'):
+            self.left_wall_segments = []
+
+        self.left_wall_segments.append({
+            'top_x': top_x,
+            'bottom_x': bottom_x,
+            'top_y': top_y,
+            'bottom_y': bottom_y,
+            'width': wall_width
+        })
+
+    def add_right_wall_segment(self, top_x, bottom_x, top_y, bottom_y, wall_width):
+        """
+        Add a segment of the right wall of the hourglass.
+
+        Parameters:
+        -----------
+        top_x : float
+            X-coordinate of the top of the wall segment
+        bottom_x : float
+            X-coordinate of the bottom of the wall segment
+        top_y : float
+            Y-coordinate of the top of the wall segment
+        bottom_y : float
+            Y-coordinate of the bottom of the wall segment
+        wall_width : float
+            Width/thickness of the wall
+        """
+        # Store the segment parameters in a list if it doesn't exist yet
+        if not hasattr(self, 'right_wall_segments'):
+            self.right_wall_segments = []
+
+        self.right_wall_segments.append({
+            'top_x': top_x,
+            'bottom_x': bottom_x,
+            'top_y': top_y,
+            'bottom_y': bottom_y,
+            'width': wall_width
+        })
+
     def handle_boundaries(self):
-        """Handle particles going beyond boundaries, including both diagonal walls."""
+        """Handle particles going beyond boundaries, including wall segments."""
         for i in range(self.N):
-            # LEFT WALL COLLISION HANDLING
-            if hasattr(self, 'left_wall_top_x') and hasattr(self, 'left_wall_bottom_x'):
-                # Calculate current wall x-position at the particle's y-position
-                # Linear interpolation between top and bottom wall positions
-                # y = 0 at bottom, y = Ly at top
-                wall_x_at_y = self.left_wall_top_x + (self.left_wall_bottom_x - self.left_wall_top_x) * (1 - self.y[i] / self.Ly)
+            # LEFT WALL SEGMENTS COLLISION HANDLING
+            if hasattr(self, 'left_wall_segments') and self.left_wall_segments:
+                for segment in self.left_wall_segments:
+                    # Check if particle's y is within this segment's y-range
+                    if segment['bottom_y'] <= self.y[i] <= segment['top_y']:
+                        # Calculate wall x-position at the particle's y-position using linear interpolation
+                        y_frac = (self.y[i] - segment['bottom_y']) / (segment['top_y'] - segment['bottom_y'])
+                        wall_x_at_y = segment['bottom_x'] + y_frac * (segment['top_x'] - segment['bottom_x'])
 
-                # Calculate the normal vector to the wall (perpendicular to the wall)
-                # Wall vector points from bottom to top
-                wall_vec_x = self.left_wall_bottom_x - self.left_wall_top_x
-                wall_vec_y = self.Ly
-                wall_length = np.sqrt(wall_vec_x**2 + wall_vec_y**2)
+                        # Calculate the normal vector to the wall (perpendicular to the wall)
+                        wall_vec_x = segment['top_x'] - segment['bottom_x']
+                        wall_vec_y = segment['top_y'] - segment['bottom_y']
+                        wall_length = np.sqrt(wall_vec_x**2 + wall_vec_y**2)
 
-                # Normal vector (pointing right, away from wall)
-                normal_x = wall_vec_y / wall_length
-                normal_y = -wall_vec_x / wall_length
+                        # Normal vector (pointing right, away from wall)
+                        normal_x = wall_vec_y / wall_length
+                        normal_y = -wall_vec_x / wall_length
 
-                # Check if particle is beyond the left wall (considering its radius)
-                if self.x[i] < wall_x_at_y + self.left_wall_width + self.r[i]:
-                    # Calculate penetration depth
-                    penetration = (wall_x_at_y + self.left_wall_width + self.r[i]) - self.x[i]
+                        # Check if particle is beyond the wall (considering its radius)
+                        if self.x[i] < wall_x_at_y + segment['width'] + self.r[i]:
+                            # Calculate penetration depth
+                            penetration = (wall_x_at_y + segment['width'] + self.r[i]) - self.x[i]
 
-                    # Move the particle to the wall surface (along the normal)
-                    self.x[i] += penetration
+                            # Move the particle to the wall surface (along the normal)
+                            self.x[i] += penetration
 
-                    # Reflect velocity with some energy loss (0.9 factor)
-                    # Calculate the velocity component along the normal
-                    v_dot_n = self.vx[i] * normal_x + self.vy[i] * normal_y
+                            # Reflect velocity with some energy loss (0.9 factor)
+                            v_dot_n = self.vx[i] * normal_x + self.vy[i] * normal_y
 
-                    # Only reflect if particle is moving toward the wall
-                    if v_dot_n < 0:
-                        # Update velocity components to reflect off the wall
-                        self.vx[i] -= 2 * v_dot_n * normal_x * 0.9
-                        self.vy[i] -= 2 * v_dot_n * normal_y * 0.9
+                            # Only reflect if particle is moving toward the wall
+                            if v_dot_n < 0:
+                                # Update velocity components to reflect off the wall
+                                self.vx[i] -= 2 * v_dot_n * normal_x * 0.9
+                                self.vy[i] -= 2 * v_dot_n * normal_y * 0.9
 
-            # RIGHT WALL COLLISION HANDLING
-            if hasattr(self, 'right_wall_top_x') and hasattr(self, 'right_wall_bottom_x'):
-                # Calculate current wall x-position at the particle's y-position
-                # Linear interpolation between top and bottom wall positions
-                wall_x_at_y = self.right_wall_top_x + (self.right_wall_bottom_x - self.right_wall_top_x) * (1 - self.y[i] / self.Ly)
+            # RIGHT WALL SEGMENTS COLLISION HANDLING
+            if hasattr(self, 'right_wall_segments') and self.right_wall_segments:
+                for segment in self.right_wall_segments:
+                    # Check if particle's y is within this segment's y-range
+                    if segment['bottom_y'] <= self.y[i] <= segment['top_y']:
+                        # Calculate wall x-position at the particle's y-position using linear interpolation
+                        y_frac = (self.y[i] - segment['bottom_y']) / (segment['top_y'] - segment['bottom_y'])
+                        wall_x_at_y = segment['bottom_x'] + y_frac * (segment['top_x'] - segment['bottom_x'])
 
-                # Calculate the normal vector to the wall (perpendicular to the wall)
-                # Wall vector points from bottom to top
-                wall_vec_x = self.right_wall_top_x - self.right_wall_bottom_x
-                wall_vec_y = self.Ly
-                wall_length = np.sqrt(wall_vec_x**2 + wall_vec_y**2)
+                        # Calculate the normal vector to the wall (perpendicular to the wall)
+                        wall_vec_x = segment['top_x'] - segment['bottom_x']
+                        wall_vec_y = segment['top_y'] - segment['bottom_y']
+                        wall_length = np.sqrt(wall_vec_x**2 + wall_vec_y**2)
 
-                # Normal vector (pointing left, away from wall)
-                normal_x = -wall_vec_y / wall_length
-                normal_y = wall_vec_x / wall_length
+                        # Normal vector (pointing left, away from wall)
+                        normal_x = -wall_vec_y / wall_length
+                        normal_y = wall_vec_x / wall_length
 
-                # Check if particle is beyond the right wall (considering its radius)
-                if self.x[i] > wall_x_at_y - self.right_wall_width - self.r[i]:
-                    # Calculate penetration depth
-                    penetration = self.x[i] - (wall_x_at_y - self.right_wall_width - self.r[i])
+                        # Check if particle is beyond the wall (considering its radius)
+                        if self.x[i] > wall_x_at_y - segment['width'] - self.r[i]:
+                            # Calculate penetration depth
+                            penetration = self.x[i] - (wall_x_at_y - segment['width'] - self.r[i])
 
-                    # Move the particle to the wall surface (along the normal)
-                    self.x[i] -= penetration
+                            # Move the particle to the wall surface (along the normal)
+                            self.x[i] -= penetration
 
-                    # Reflect velocity with some energy loss (0.9 factor)
-                    # Calculate the velocity component along the normal
-                    v_dot_n = self.vx[i] * normal_x + self.vy[i] * normal_y
+                            # Reflect velocity with some energy loss (0.9 factor)
+                            v_dot_n = self.vx[i] * normal_x + self.vy[i] * normal_y
 
-                    # Only reflect if particle is moving toward the wall
-                    if v_dot_n < 0:
-                        # Update velocity components to reflect off the wall
-                        self.vx[i] -= 2 * v_dot_n * normal_x * 0.9
-                        self.vy[i] -= 2 * v_dot_n * normal_y * 0.9
+                            # Only reflect if particle is moving toward the wall
+                            if v_dot_n < 0:
+                                # Update velocity components to reflect off the wall
+                                self.vx[i] -= 2 * v_dot_n * normal_x * 0.9
+                                self.vy[i] -= 2 * v_dot_n * normal_y * 0.9
 
             # Bounce off the bottom wall
             if self.y[i] < self.r[i]:
@@ -423,7 +548,6 @@ class HourglassSimulator:
             'total_energy': self.total_energy
         }
         self.snapshots.append(snapshot)
-        # print(f"Snapshot taken at time {self.time}")
 
     ################################
     ##### Metrics Calculations #####
