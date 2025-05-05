@@ -1,8 +1,8 @@
 import numpy as np
 
 class HourglassSimulator:
-    def __init__(self, N=64, Lx=20.0, Ly=20.0, temperature=1.0, dt=0.001, gravity=0.1,
-                 particle_radius=0.5, k=1.0, gamma=0.3,
+    def __init__(self, N=64, Lx=20.0, Ly=20.0, temperature=1.0, dt=0.01, gravity=5.0,
+                 particle_radius=0.5, k=1.0, gamma=0.3, neck_width=3.0, wall_width=0.5,
                  snapshot_interval=10):
 
         # Init simulation variables
@@ -16,6 +16,8 @@ class HourglassSimulator:
         self.gamma = gamma  # Damping coefficient
         self.initial_temperature = temperature
         self.snapshot_interval = snapshot_interval
+        self.neck_width = neck_width  # Width of the neck in the hourglass
+        self.wall_width = wall_width  # Thickness of the walls
 
         # Arrays for positions, radii, velocities, and accelerations
         self.x = np.zeros(N)
@@ -336,20 +338,14 @@ class HourglassSimulator:
     ############################
     ##### Wall Constraints #####
     ############################
-    def draw_hourglass(self, neck_width=3.0, wall_width=0.5):
+    def draw_hourglass(self):
         """
         Creates an hourglass shape by placing left and right walls that meet at the middle.
-
-        Parameters:
-        -----------
-        neck_width : float
-            Width of the narrow middle part of the hourglass
-        wall_width : float
-            Thickness of the walls
         """
+
         # Calculate wall positions to create an hourglass shape
         left_wall_top_x = 0.0       # Left edge at top
-        left_wall_middle_x = (self.Lx - neck_width) / 2  # Position at the neck (middle height)
+        left_wall_middle_x = (self.Lx - self.neck_width) / 2  # Position at the neck (middle height)
         left_wall_bottom_x = 0.0    # Left edge at bottom
 
         right_wall_top_x = self.Lx   # Right edge at top
@@ -372,7 +368,7 @@ class HourglassSimulator:
             'bottom_x': left_wall_middle_x,
             'top_y': self.Ly,
             'bottom_y': self.Ly / 2,  # Middle height
-            'width': wall_width
+            'width': self.wall_width
         })
 
         self.right_wall_segments.append({
@@ -380,7 +376,7 @@ class HourglassSimulator:
             'bottom_x': right_wall_middle_x,
             'top_y': self.Ly,
             'bottom_y': self.Ly / 2,  # Middle height
-            'width': wall_width
+            'width': self.wall_width
         })
 
         # Add bottom half of hourglass (middle to bottom)
@@ -389,7 +385,7 @@ class HourglassSimulator:
             'bottom_x': left_wall_bottom_x,
             'top_y': self.Ly / 2,  # Middle height
             'bottom_y': 0,
-            'width': wall_width
+            'width': self.wall_width
         })
 
         self.right_wall_segments.append({
@@ -397,7 +393,7 @@ class HourglassSimulator:
             'bottom_x': right_wall_bottom_x,
             'top_y': self.Ly / 2,  # Middle height
             'bottom_y': 0,
-            'width': wall_width
+            'width': self.wall_width
         })
 
     def add_left_wall(self, top_x, bottom_x, wall_width):

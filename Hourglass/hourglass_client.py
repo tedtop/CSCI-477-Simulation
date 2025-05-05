@@ -9,7 +9,7 @@ from HourglassSimulator import HourglassSimulator
 
 # Create simulation with parameters optimized for visible falling
 simulator = HourglassSimulator(
-    N=100,                  # Number of particles
+    N=200,                  # Number of particles
     Lx=20.0,                # Box width
     Ly=20.0,                # Box height
     temperature=0.0,        # No initial random motion
@@ -18,8 +18,9 @@ simulator = HourglassSimulator(
     particle_radius=0.5,    # Smaller radius to reduce overlapping
     k=0.1,                  # Weaker spring constant
     gamma=0.05,             # Lower damping
-    snapshot_interval=1     # Every step
-)
+    neck_width=2.5,         # Width of the neck in the hourglass
+    wall_width=0.5,         # Width of the walls
+    )
 
 # Animation timing parameters
 reference_dt = 0.01         # Reference timestep for animation timing
@@ -29,7 +30,7 @@ steps_per_frame = max(1, int(round(time_per_frame / simulator.dt)))  # Adjusted 
 print(f"Using timestep dt={simulator.dt}, running {steps_per_frame} simulation steps per animation frame")
 
 # Create an hourglass shape with a narrow neck in the middle
-simulator.draw_hourglass(neck_width=3.0, wall_width=0.5)
+simulator.draw_hourglass()
 
 # Initialize particles to randomly fall in from the top
 simulator.initialize_random_falling_particles()
@@ -219,7 +220,7 @@ def update(frame):
 
     # Track particles passing through the hourglass neck (middle height)
     neck_y = simulator.Ly / 2
-    neck_width = 3.0  # This should match the neck_width in draw_hourglass
+    neck_width = simulator.neck_width  # Use the simulator's neck_width parameter
     neck_x_min = (simulator.Lx - neck_width) / 2
     neck_x_max = neck_x_min + neck_width
 
